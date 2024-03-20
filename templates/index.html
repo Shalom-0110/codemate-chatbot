@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HowDoi ChatBot</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-1ycn6IcaQQ40/MKBW2W4Rhis/DbILU74C1vSrLJxCq57o941Ym01SwNsOMqvEBFlcgUa6xLiPY/NS5R+E6ztJQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        #main {
+            max-width: 600px;
+            margin: 50px auto;
+            background-color: rgba(154, 23, 80, 0.5);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+  display: flex;
+  align-items: center;
+  background-color: #be2567;
+  margin-bottom: 20px;
+  border-radius: 10px;
+}
+
+.header-image {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #ccc;
+  margin: 5px 10px 0px 20px;
+}
+
+.chat-title {
+  display: flex;
+  align-items: center;
+}
+
+h2 {
+  background-color: #be2567;
+  color: white;
+  padding: 10px;
+  align-items: center;
+  display: flex;
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+
+
+        .header-icon {
+          font-size: 24px;
+          margin-right: 10px;
+        }
+
+        .active-icon {
+          animation: pulse 1s infinite;
+        }
+
+        #msg {
+            height: 300px;
+            overflow-y: scroll;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #ffffff;
+        }
+
+        .input {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+
+        .send {
+            padding: 10px 20px;
+            background-color: #be2567 /* Pale Pink */
+            border:honeydew
+            color: #f4f4f4;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .message-container {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            background-color: #e3e2df;
+            overflow-wrap: break-word;
+        }
+
+        .user-message {
+    background-color: #ff7ea5/* Pink with 30% transparency */
+    color: white;
+    border-radius: 5px;
+}
+
+        .bot-message {
+          background-color: #e3afbc; 
+          color: white;
+          border-radius: 5px;
+        }
+
+    </style>
+</head>
+
+<body>
+  <div id="main">
+    <div class="header">
+      <img src="/static/howdoiiii logo.png" alt="Avatar" class="header-image">
+      <div class="chat-title"><h2>HowDoi ChatBot</h2></div>
+    </div>
+    <div id="msg"></div>
+    <div class="input">
+      <input type="text" id="msg_send" placeholder="New Message">
+      <button class="send" id="reply">Send <i class="fas fa-paper-plane"></i></button>
+    </div>
+  </div>
+  
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const msgSend = document.getElementById('msg_send');
+            const replyBtn = document.getElementById('reply');
+            const msgBox = document.getElementById('msg');
+        
+            replyBtn.addEventListener('click', function() {
+                const question = msgSend.value;
+                if (question.trim() !== '') {
+                    displayMessage(question, 'user', true);
+                    msgSend.value = '';
+                    
+                    // Refine the search query to focus on the user's provided question
+                    axios.get(`https://api.stackexchange.com/2.3/search/advanced?site=stackoverflow&sort=relevance&order=desc&title=${question}`)
+                        .then(response => {
+                            if (response.data.items && response.data.items.length > 0) {
+                                const answer = response.data.items[0].title; // Extracting the first relevant answer
+                                displayMessage(answer, 'bot', false);
+                            } else {
+                                displayMessage("No relevant answer found. Please try again with a different question.", 'bot', false);
+                            }
+                        })
+                        .catch(error => {
+                            displayMessage("Could not retrieve answer. Please try again later.", 'bot', false);
+                        });
+                }
+            });
+        
+            function displayMessage(message, sender, isUser) {
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message-container';
+                messageElement.textContent = message;
+                messageElement.classList.add(sender == 'user' ? 'user-message' : 'bot-message');
+                msgBox.appendChild(messageElement);
+            }
+        });
+    </script>
+</body>
+</html>
