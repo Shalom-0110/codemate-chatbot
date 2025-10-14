@@ -9,15 +9,19 @@ def index():
 
 @app.route('/ask', methods=['POST'])
 def ask_question():
-    print(request.json)  # Log the entire JSON data received from the client
     question = request.json.get('question')
     
     if question:
-        result = subprocess.check_output(['howdoi', question]).decode('utf-8')
-        return jsonify({'result': result})
+        try:
+            result = subprocess.check_output(['howdoi', question], stderr=subprocess.STDOUT).decode('utf-8')
+            return jsonify({'result': result})
+        except subprocess.CalledProcessError as e:
+            error_output = e.output.decode('utf-8')
+            return jsonify({'result': 'Error: ' + error_output})
+        except Exception as e:
+            return jsonify({'result': 'Unexpected error occurred: ' + str(e)})
     else:
         return jsonify({'result': 'Unable to process the question'})
 
 if __name__ == '__main__':
     app.run(debug=True)
-
