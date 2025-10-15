@@ -1,7 +1,7 @@
 from django.urls import path
-from .views import ask, index
+from .views import index, ask
 
 urlpatterns = [
-    path('', index, name='index'),  # optional for testing old HTML
+    path('', index, name='home'),
     path('ask/', ask, name='ask'),
 ]
