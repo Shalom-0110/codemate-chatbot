@@ -1,3 +1,5 @@
-Flask
-howdoi
-flask-cors
+Django>=5.2.7,<6.0
+python-dotenv>=1.0.0
+loguru>=0.7.0
+google-genai>=0.3.0
+requests>=2.31.0
