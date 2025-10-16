@@ -19,6 +19,10 @@ logger.add(str(LOG_DIR / "chatbot.log"), rotation="5 MB", retention="7 days")
 
 client = genai.Client(api_key=API_KEY) if API_KEY else genai.Client()
 
+
+def welcome(request):
+    return render(request, "chatbot_app/welcome.html")
+
 @csrf_exempt
 def index(request):
     return render(request, "chatbot_app/index.html")
