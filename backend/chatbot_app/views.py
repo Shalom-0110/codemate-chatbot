@@ -24,8 +24,8 @@ def welcome(request):
     return render(request, "chatbot_app/welcome.html")
 
 @csrf_exempt
-def index(request):
-    return render(request, "chatbot_app/index.html")
+def chat(request):
+    return render(request, "chatbot_app/chat.html")
 
 @csrf_exempt
 def ask(request):
