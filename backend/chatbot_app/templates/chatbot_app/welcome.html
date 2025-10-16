@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Welcome - CodeMate ChatBot</title>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@500&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            --base: 16px;
+            --card-width: 520px;
+            --card-padding: 2.5rem;
+            --card-radius: 18px;
+            --glass-blur: 14px;
+            --shadow-color: 6, 12, 28;
+            --accent-1: #1488cc;
+            --accent-2: #2b32b2;
+            --glass-top: rgba(20, 136, 204, 0.10);
+            --glass-bot: rgba(43, 50, 178, 0.06);
+            --muted: rgba(243, 247, 251, 0.9);
+            --contrast-dark: #0f1724;
+            --h1-offset: 24px;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: var(--base);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            display: grid;
+            place-items: center;
+            font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            color: var(--muted);
+            background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+            background-attachment: fixed;
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+            overflow: hidden;
+        }
+
+        body::before {
+            display: none
+        }
+
+        .site-container {
+            width: 100%;
+            padding: 2rem;
+            display: grid;
+            place-items: center;
+            min-height: 100vh;
+        }
+
+       .card {
+            width: clamp(320px, var(--card-width), 90vw);
+            padding: var(--card-padding);
+            border-radius: var(--card-radius);
+            background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06));
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            isolation: isolate;
+            transform: translateZ(0);
+            background-clip: padding-box;
+            border: none;
+            box-shadow:
+                0 18px 50px rgba(var(--shadow-color), 0.45),
+                0 2px 8px rgba(0,0,0,0.10);
+            position: relative;
+            color: #0f1724; 
+            font-size: 0.9375rem;
+            line-height: 1.45;
+            letter-spacing: 0.12px;
+        }
+
+        .logo {
+            width: 84px;
+            height: 84px;
+            border-radius: 50%;
+            display: block;
+            margin: 0 auto 18px;
+            border: 2px solid rgba(255, 255, 255, 0.10);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+            background-color: rgba(255, 255, 255, 0.02);
+            object-fit: cover;
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-family: "JetBrains Mono", monospace;
+            font-weight: 500;
+            font-size: 1rem;
+            line-height: 1.15;
+            color: #ffffff;
+            letter-spacing: 0.4px;
+            max-width: 44ch;
+            margin-inline: auto;
+            text-align: left;
+            padding-left: var(--h1-offset);
+            box-sizing: border-box;
+
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+
+        p {
+            margin: 0 0 22px;
+            max-width: 44ch;
+            color: rgba(243, 247, 251, 0.95);
+            font-weight: 300;
+            font-size: 0.9375rem;
+            line-height: 1.55;
+            letter-spacing: 0.2px;
+            margin-inline: auto;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            align-items: center;
+            margin-top: 6px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: .5rem;
+            padding: 10px 24px;
+            border-radius: 999px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9375rem;
+            color: var(--accent-2);
+            background: #fff;
+            text-decoration: none;
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
+            transition: transform .16s ease, background .16s ease, color .16s ease, box-shadow .16s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.14);
+            color: #fff;
+            box-shadow: 0 14px 40px rgba(0, 0, 0, 0.22);
+        }
+
+        .muted {
+            display: block;
+            margin-top: 10px;
+            font-size: 0.8125rem;
+            color: rgba(243, 247, 251, 0.75);
+            font-weight: 300;
+        }
+
+        @media (max-width: 420px) {
+            :root {
+                --card-padding: 1.75rem;
+            }
+
+            .logo {
+                width: 72px;
+                height: 72px;
+                margin-bottom: 14px;
+            }
+
+            h1 {
+                font-size: 1rem;
+            }
+
+            p {
+                font-size: 0.875rem;
+            }
+
+            .btn {
+                padding: 10px 18px;
+                font-size: 0.875rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="site-container">
+        <div class="card" role="region" aria-label="Welcome card">
+            <img src="/static/CodeMateBot.png" alt="CodeMate logo" class="logo" />
+            <h1>Welcome to your friendly CodeMate!</h1>
+
+            <p>Ask anything about coding, AI, or software - your digital teammate’s got your back 💬</p>
+            <div class="actions">
+                <a class="btn" href="/chat/">Try Chat Now</a>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
