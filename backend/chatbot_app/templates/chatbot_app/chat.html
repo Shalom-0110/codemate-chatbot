@@ -7,7 +7,6 @@
     <title>Programming ChatBot</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <!-- Markdown, sanitizer and syntax highlight -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css">
@@ -207,75 +206,188 @@
                 margin: 8px 0;
         }
 
+        #attach-btn { outline: none; }
+#attach-btn:focus { outline: none; box-shadow: none; }
+
+.attach-icon {
+    font-size: 20px;
+    color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
         .bot-message code { font-family: inherit; }
     </style>
 </head>
 
 <body>
-
     <div id="chat-app">
         <div class="header">
             <img src="/static/CodeMateBot.png" alt="Logo">
             <h2>CodeMate ChatBot</h2>
         </div>
-
         <div id="messages"></div>
 
         <div class="input-container">
+            <label id="attach-btn" title="Attach file" style="display:inline-flex; align-items:center; cursor:pointer;">
+                <i class="fa-solid fa-plus attach-icon" aria-hidden="true"></i>
+                <input id="file-input" type="file" accept=".pdf,.txt,.md,image/*" style="display:none" />
+            </label>
+
             <input type="text" id="input-msg" placeholder="Ask me anything about programming...">
             <button id="send-btn"><i class="fas fa-paper-plane"></i></button>
         </div>
-    </div>
+        
+        <div id="file-preview" style="padding:10px 20px;"></div>
+        <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+        <script>
+            const messages = document.getElementById('messages');
+            const input = document.getElementById('input-msg');
+            const sendBtn = document.getElementById('send-btn');
+            const fileInput = document.getElementById('file-input');
+            const preview = document.getElementById('file-preview');
 
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script>
-        const messages = document.getElementById('messages');
-        const input = document.getElementById('input-msg');
-        const sendBtn = document.getElementById('send-btn');
+            const MAX_BYTES = 5 * 1024 * 1024; // 5MB
+            const ALLOWED = ['application/pdf', 'text/plain', 'image/png', 'image/jpeg', 'image/jpg', 'text/markdown'];
 
-        function appendUserMessage(text) {
-            const div = document.createElement('div');
-            div.classList.add('message', 'user-message');
-            div.textContent = text;
-            messages.appendChild(div);
-            messages.scrollTop = messages.scrollHeight;
-        }
-
-        function appendBotMarkdown(mdString) {
-            const html = marked.parse(mdString || '');            
-            const clean = DOMPurify.sanitize(html, { ADD_ATTR: ['target'] }); 
-            const div = document.createElement('div');
-            div.classList.add('message', 'bot-message');
-            div.innerHTML = clean;
-            messages.appendChild(div);
-
-            if (window.hljs) {
-                div.querySelectorAll('pre code').forEach(block => {
-                    hljs.highlightElement(block);
-                });
+            function appendUserMessage(text) {
+                const div = document.createElement('div');
+                div.classList.add('message', 'user-message');
+                div.textContent = text;
+                messages.appendChild(div);
+                messages.scrollTop = messages.scrollHeight;
             }
 
-            messages.scrollTop = messages.scrollHeight;
-        }
+            function appendBotMarkdown(mdString) {
+                const html = marked.parse(mdString || '');
+                const clean = DOMPurify.sanitize(html, { ADD_ATTR: ['target'] });
+                const div = document.createElement('div');
+                div.classList.add('message', 'bot-message');
+                div.innerHTML = clean;
+                messages.appendChild(div);
 
-        sendBtn.addEventListener('click', () => {
-            const question = input.value.trim();
-            if (!question) return;
-            appendUserMessage(question);
-            input.value = '';
+                if (window.hljs) {
+                    div.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
+                }
 
-            axios.post('/ask/', { question })
-                .then(res => {
+                messages.scrollTop = messages.scrollHeight;
+            }
+
+            fileInput.addEventListener('change', () => {
+                preview.innerHTML = '';
+                const f = fileInput.files[0];
+                if (!f) return;
+
+                if (f.size > MAX_BYTES) {
+                    preview.innerText = `File too large (${Math.round(f.size / 1024)} KB). Max ${(MAX_BYTES / 1024).toFixed(0)} KB.`;
+                    fileInput.value = '';
+                    return;
+                }
+
+                const ok = ALLOWED.includes(f.type) || f.name.toLowerCase().endsWith('.md');
+                if (!ok) {
+                    preview.innerText = `Unsupported file type: ${f.type || f.name}`;
+                    fileInput.value = '';
+                    return;
+                }
+
+                if (f.type.startsWith('image/')) {
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(f);
+                    img.style.maxWidth = '200px';
+                    img.style.maxHeight = '140px';
+                    img.style.borderRadius = '6px';
+                    preview.appendChild(img);
+                    const meta = document.createElement('div'); meta.style.fontSize = '12px'; meta.style.color = '#445';
+                    meta.innerText = `${f.name} — ${Math.round(f.size / 1024)} KB`;
+                    preview.appendChild(meta);
+                    return;
+                }
+
+                const meta = document.createElement('div');
+                meta.innerText = `${f.name} — ${Math.round(f.size / 1024)} KB`;
+                preview.appendChild(meta);
+            });
+
+            function appendUserAttachment(file) {
+                    const div = document.createElement('div');
+                    div.classList.add('message', 'user-message');
+                    if (file && file.type && file.type.startsWith('image/')) {
+                        const img = document.createElement('img');
+                        img.src = URL.createObjectURL(file);
+                        img.style.maxWidth = '220px';
+                        img.style.maxHeight = '160px';
+                        img.style.borderRadius = '8px';
+                        img.style.display = 'block';
+                        img.style.marginBottom = '8px';
+                        div.appendChild(img);
+                        const meta = document.createElement('div');
+                        meta.style.fontSize = '12px';
+                        meta.style.opacity = '0.95';
+                        meta.textContent = `${file.name} — ${Math.round(file.size / 1024)} KB`;
+                        div.appendChild(meta);
+                    } else {
+                        const tile = document.createElement('div');
+                        tile.style.display = 'flex';
+                        tile.style.gap = '10px';
+                        tile.style.alignItems = 'center';
+                        const icon = document.createElement('div');
+                        icon.textContent = '📎';
+                        icon.style.fontSize = '20px';
+                        const info = document.createElement('div');
+                        info.style.fontSize = '14px';
+                        info.innerHTML = `<strong>${file.name}</strong><div style="font-size:12px;opacity:0.9">${Math.round(file.size / 1024)} KB</div>`;
+                        tile.appendChild(icon);
+                        tile.appendChild(info);
+                        div.appendChild(tile);
+                    }
+                    messages.appendChild(div);
+                    messages.scrollTop = messages.scrollHeight;
+                }
+
+
+            async function sendMessage() {
+                const question = input.value.trim();
+                const file = fileInput.files[0] || null;
+                if (!question && !file) return;
+
+                if (file) {
+                    appendUserAttachment(file);
+                    if (question) appendUserMessage(question);
+                } else {
+                    appendUserMessage(question);
+                }
+
+
+                const fd = new FormData();
+                fd.append('question', question);
+                if (file) fd.append('attachment', file);
+
+                input.value = '';
+                preview.innerHTML = '';
+                fileInput.value = '';
+
+                try {
+                    const res = await axios.post('/ask/', fd, {
+                        headers: { 'Content-Type': 'multipart/form-data' }
+                    });
                     appendBotMarkdown(res.data.result);
-                })
-                .catch(err => {
+                } catch (err) {
+                    console.error(err);
                     appendBotMarkdown('**Error:** Could not contact server.');
-                });
-        });
-        input.addEventListener('keyup', e => {
-            if (e.key === 'Enter') sendBtn.click();
-        });
-    </script>
+                }
+            }
 
+            sendBtn.addEventListener('click', sendMessage);
+            input.addEventListener('keyup', e => { if (e.key === 'Enter') sendMessage(); });
+
+            
+            document.getElementById('attach-btn').addEventListener('pointerdown', () => {
+                fileInput.value = '';
+            });
+
+        </script>
 </body>
 </html>
