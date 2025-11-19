@@ -7,6 +7,9 @@ from dotenv import load_dotenv
 from loguru import logger
 from google import genai
 from google.genai import types
+from PIL import Image, ImageOps
+import pytesseract
+from io import BytesIO
 
 load_dotenv()
 API_KEY = os.getenv("GOOGLE_API_KEY") or os.getenv("GOOGLE_GENERATIVE_AI_API_KEY")
@@ -78,7 +81,7 @@ def ask(request):
     extracted_text = None
     if attachment:
         name = attachment.name.lower()
-        MAX_BYTES = 5 * 1024 * 1024  # this is the attachment size limit 5MB
+        MAX_BYTES = 5 * 1024 * 1024  # this is the attachment size limit btw i.e 5MB
         if attachment.size > MAX_BYTES:
             return JsonResponse({"result": "Attachment too large (max 5MB)."}, status=400)
 
@@ -90,7 +93,7 @@ def ask(request):
                 reader = PdfReader(attachment)
 
                 pages = []
-                page_limit = min(2, len(reader.pages))  # rn considering only 2 min pages cus im using free model, dont ask for more haha
+                page_limit = min(2, len(reader.pages))  # rn considering only 2 min pages since im using free model, dont ask for more haha
                 for i in range(page_limit):
                     try:
                         p = reader.pages[i]
@@ -110,17 +113,86 @@ def ask(request):
             except Exception:
                 extracted_text = None
 
+        # Images
+        elif (getattr(attachment, "content_type", "") or "").lower().startswith("image/") or \
+             name.endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tiff', '.gif', '.webp')):
+            try:
+                ALLOWED_MIMES = {"image/png", "image/jpeg", "image/webp"}
+                content_type = (getattr(attachment, "content_type", "") or "").lower()
+                if content_type and content_type not in ALLOWED_MIMES:
+                    if not any(name.endswith(ext) for ext in ('.png', '.jpg', '.jpeg', '.webp')):
+                        return JsonResponse({"result": "Unsupported image MIME type."}, status=400)
+
+                attachment.seek(0)
+                raw_bytes = attachment.read()
+                if len(raw_bytes) > 7 * 1024 * 1024:
+                    return JsonResponse({"result": "Image too large (max 7MB)."}, status=400)
+
+                img = Image.open(BytesIO(raw_bytes))
+                try:
+                    img = ImageOps.exif_transpose(img)
+                except Exception:
+                    pass
+
+                max_dim = 1600
+                if max(img.size) > max_dim:
+                    ratio = max_dim / max(img.size)
+                    img = img.resize((int(img.size[0]*ratio), int(img.size[1]*ratio)))
+
+                try:
+                    ocr_text = pytesseract.image_to_string(img).strip()
+                except Exception:
+                    ocr_text = ""
+
+                if ocr_text:
+                    extracted_text = f"Image file: {attachment.name}\n\nOCR_TEXT:\n{ocr_text}"
+                else:
+                    extracted_text = f"Image file: {attachment.name}\n\n(OCR produced no readable text.)"
+
+            except Exception as e:
+                logger.exception("Image processing failed: %s", e)
+                extracted_text = None
+                img = None
+
         else:
             return JsonResponse({"result": "Unsupported file type. Use PDF or .txt/.md for now."}, status=400)
 
-    system_instruction = (
-        "You are an expert Python teacher. Answer the user's programming question in clear Markdown. "
-        "Use a short title heading, a concise explanation in bullet points, and include small runnable code examples "
-        "in triple-backtick fenced code blocks labeled with the language (e.g. ```python). "
-        "Keep the answer focused and readable; avoid excessive prose. If asked for multiple examples, provide up to 2. "
-    )
+    is_image = False
+    name = getattr(attachment, "name", "").lower() if attachment else ""
+    if attachment:
+        ct = (getattr(attachment, "content_type", "") or "").lower()
+        if ct.startswith("image/") or name.endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tiff', '.gif')):
+            is_image = True
 
-    contents = []
+    if is_image:
+        system_instruction = (
+            "You are an expert visual analyst. The user uploaded an image (pixels provided). "
+            "Do NOT generate images. Provide a short title, 3-6 concise observations about objects, layout, colors, and likely context. "
+            "If OCR text is present, extract and summarize it. Then directly answer the user's question. Use Markdown."
+        )
+    else:
+        system_instruction = (
+            "You are an expert software engineer and coding tutor who supports any programming language. "
+            "Answer the user's programming question in clear Markdown. Start with a short title, then a concise explanation in bullet points, and include small runnable code examples "
+            "in triple-backtick fenced code blocks labeled with the language (e.g. ```javascript or ```python). "
+            "When the user requests code in a specific language, produce the code in that language. If no language is specified, choose a reasonable default and state which language you used. "
+            "Keep answers focused and readable; avoid excessive prose. If asked for multiple examples, provide up to 2."
+        )
+
+    contents = [system_instruction]
+    if is_image:
+        try:
+            if 'img' not in locals():
+                attachment.seek(0)
+                img = Image.open(BytesIO(attachment.read()))
+                try:
+                    img = ImageOps.exif_transpose(img)
+                except Exception:
+                    pass
+            contents.append(img)  
+        except Exception:
+            logger.exception("Could not attach image object to contents, falling back to text-only.")
+
     if extracted_text:
         EXCERPT_CHARS = 3000
         excerpt = extracted_text[:EXCERPT_CHARS]

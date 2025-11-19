@@ -207,17 +207,15 @@
         }
 
         #attach-btn { outline: none; }
-#attach-btn:focus { outline: none; box-shadow: none; }
+        #attach-btn:focus { outline: none; box-shadow: none; }
 
-.attach-icon {
-    font-size: 20px;
-    color: #000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-
+        .attach-icon {
+            font-size: 20px;
+            color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
         .bot-message code { font-family: inherit; }
     </style>
 </head>
@@ -275,41 +273,83 @@
                 messages.scrollTop = messages.scrollHeight;
             }
 
+            function clearAttachment() {
+                    const imgs = preview.querySelectorAll('img[data-blob-url]');
+                    imgs.forEach(img => {
+                        try { URL.revokeObjectURL(img.dataset.blobUrl); } catch (e) { }
+                    });
+                    preview.innerHTML = '';
+                    fileInput.value = '';
+            }
+
+
             fileInput.addEventListener('change', () => {
-                preview.innerHTML = '';
-                const f = fileInput.files[0];
-                if (!f) return;
+                    preview.innerHTML = '';
+                    const f = fileInput.files[0];
+                    if (!f) return;
 
-                if (f.size > MAX_BYTES) {
-                    preview.innerText = `File too large (${Math.round(f.size / 1024)} KB). Max ${(MAX_BYTES / 1024).toFixed(0)} KB.`;
-                    fileInput.value = '';
-                    return;
-                }
+                    if (f.size > MAX_BYTES) {
+                        preview.innerText = `File too large (${Math.round(f.size / 1024)} KB). Max ${(MAX_BYTES / 1024).toFixed(0)} KB.`;
+                        fileInput.value = '';
+                        return;
+                    }
 
-                const ok = ALLOWED.includes(f.type) || f.name.toLowerCase().endsWith('.md');
-                if (!ok) {
-                    preview.innerText = `Unsupported file type: ${f.type || f.name}`;
-                    fileInput.value = '';
-                    return;
-                }
+                    const ok = ALLOWED.includes(f.type) || f.name.toLowerCase().endsWith('.md') || f.type.startsWith('image/');
+                    if (!ok) {
+                        preview.innerText = `Unsupported file type: ${f.type || f.name}`;
+                        fileInput.value = '';
+                        return;
+                    }
 
-                if (f.type.startsWith('image/')) {
-                    const img = document.createElement('img');
-                    img.src = URL.createObjectURL(f);
-                    img.style.maxWidth = '200px';
-                    img.style.maxHeight = '140px';
-                    img.style.borderRadius = '6px';
-                    preview.appendChild(img);
-                    const meta = document.createElement('div'); meta.style.fontSize = '12px'; meta.style.color = '#445';
-                    meta.innerText = `${f.name} — ${Math.round(f.size / 1024)} KB`;
-                    preview.appendChild(meta);
-                    return;
-                }
+                    const container = document.createElement('div');
+                    container.style.display = 'flex';
+                    container.style.alignItems = 'center';
+                    container.style.justifyContent = 'space-between';
+                    container.style.gap = '12px';
 
-                const meta = document.createElement('div');
-                meta.innerText = `${f.name} — ${Math.round(f.size / 1024)} KB`;
-                preview.appendChild(meta);
-            });
+                    const left = document.createElement('div');
+                    left.style.display = 'flex';
+                    left.style.alignItems = 'center';
+                    left.style.gap = '12px';
+
+                    if (f.type.startsWith('image/')) {
+                        const img = document.createElement('img');
+                        const blobUrl = URL.createObjectURL(f);
+                        img.src = blobUrl;
+                        img.dataset.blobUrl = blobUrl;
+                        img.style.maxWidth = '200px';
+                        img.style.maxHeight = '140px';
+                        img.style.borderRadius = '6px';
+                        img.style.display = 'block';
+                        left.appendChild(img);
+
+                        const meta = document.createElement('div');
+                        meta.style.fontSize = '12px';
+                        meta.style.color = '#445';
+                        meta.innerText = `${f.name} — ${Math.round(f.size / 1024)} KB`;
+                        left.appendChild(meta);
+                    } else {
+                        const meta = document.createElement('div');
+                        meta.innerHTML = `<strong>${f.name}</strong><div style="font-size:12px;color:#445">${Math.round(f.size / 1024)} KB</div>`;
+                        left.appendChild(meta);
+                    }
+
+                    const closeBtn = document.createElement('button');
+                    closeBtn.type = 'button';
+                    closeBtn.innerText = '✕';
+                    closeBtn.title = 'Remove attachment';
+                    closeBtn.style.border = 'none';
+                    closeBtn.style.background = 'transparent';
+                    closeBtn.style.fontSize = '18px';
+                    closeBtn.style.cursor = 'pointer';
+                    closeBtn.addEventListener('click', () => {
+                        clearAttachment();
+                    });
+
+                    container.appendChild(left);
+                    container.appendChild(closeBtn);
+                    preview.appendChild(container);
+                });
 
             function appendUserAttachment(file) {
                     const div = document.createElement('div');
@@ -347,7 +387,7 @@
                     messages.scrollTop = messages.scrollHeight;
                 }
 
-
+            
             async function sendMessage() {
                 const question = input.value.trim();
                 const file = fileInput.files[0] || null;
